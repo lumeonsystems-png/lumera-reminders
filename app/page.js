@@ -8,6 +8,8 @@ export default function HomePage() {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [addError, setAddError] = useState("");
   const [form, setForm] = useState({
     email: "",
     name: "",
@@ -17,10 +19,27 @@ export default function HomePage() {
 
   async function loadClients() {
     setLoading(true);
-    const res = await fetch("/api/clients");
-    const data = await res.json();
-    setClients(data.clients || []);
-    setLoading(false);
+    setLoadError("");
+    try {
+      const res = await fetch("/api/clients");
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Serveris grąžino netikėtą atsakymą (${res.status}). Tikriausiai neteisingai sukonfigūruoti SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY aplinkos kintamieji Vercel projekte.`
+        );
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Klaida (${res.status})`);
+      }
+      setClients(data.clients || []);
+    } catch (err) {
+      setLoadError(err.message || "Nepavyko įkelti klientų sąrašo.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -46,16 +65,28 @@ export default function HomePage() {
 
   async function handleAddClient(e) {
     e.preventDefault();
-    const res = await fetch("/api/clients", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    if (data.client) {
+    setAddError("");
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Serveris grąžino netikėtą atsakymą (${res.status}).`);
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Klaida (${res.status})`);
+      }
       setClients((prev) => [data.client, ...prev]);
       setForm({ email: "", name: "", invoice_number: "26000-01", due_date: "" });
       setShowForm(false);
+    } catch (err) {
+      setAddError(err.message || "Nepavyko pridėti kliento.");
     }
   }
 
@@ -103,6 +134,12 @@ export default function HomePage() {
       </header>
 
       {showForm && (
+        <>
+        <p style={{ color: "#666", fontSize: "13px", margin: "0 0 8px" }}>
+          „Vardas / įmonė“ — tik jūsų pačių atpažinimui sąraše (pvz. „Neringa,
+          UAB Anratas“), laiške šis laukas niekur nerodomas. Sąskaitos Nr. ir
+          terminas įrašomi automatiškai į siunčiamą laišką.
+        </p>
         <form onSubmit={handleAddClient} style={styles.form}>
           <input
             style={styles.input}
@@ -132,7 +169,15 @@ export default function HomePage() {
           <button type="submit" style={styles.saveButton}>
             Išsaugoti
           </button>
+          {addError && <p style={{ color: "#c0392b", width: "100%", margin: "4px 0 0" }}>{addError}</p>}
         </form>
+        </>
+      )}
+
+      {loadError && (
+        <div style={{ ...styles.resultBox, marginBottom: "16px" }}>
+          <p style={{ color: "#c0392b", margin: 0 }}>{loadError}</p>
+        </div>
       )}
 
       {loading ? (
