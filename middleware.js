@@ -15,7 +15,11 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Leidžiam praeiti prisijungimo puslapiui ir login API be tikrinimo.
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/login")) {
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/login") ||
+    pathname.startsWith("/api/health")
+  ) {
     return NextResponse.next();
   }
 

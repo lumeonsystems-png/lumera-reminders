@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeErrorMessage } from "@/lib/errors";
 
 export default function HomePage() {
   const [clients, setClients] = useState([]);
@@ -32,11 +33,11 @@ export default function HomePage() {
         );
       }
       if (!res.ok) {
-        throw new Error(data.error || `Klaida (${res.status})`);
+        throw new Error(safeErrorMessage(data.error) || `Klaida (${res.status})`);
       }
       setClients(data.clients || []);
     } catch (err) {
-      setLoadError(err.message || "Nepavyko įkelti klientų sąrašo.");
+      setLoadError(safeErrorMessage(err.message) || "Nepavyko įkelti klientų sąrašo.");
     } finally {
       setLoading(false);
     }
@@ -177,6 +178,13 @@ export default function HomePage() {
       {loadError && (
         <div style={{ ...styles.resultBox, marginBottom: "16px" }}>
           <p style={{ color: "#c0392b", margin: 0 }}>{loadError}</p>
+          <button
+            type="button"
+            style={{ ...styles.saveButton, marginTop: "10px" }}
+            onClick={loadClients}
+          >
+            Bandyti dar kartą
+          </button>
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { getSupabase } from "@/lib/supabase";
+import { safeErrorMessage } from "@/lib/errors";
 
 export async function GET() {
   try {
@@ -9,11 +10,11 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ error: safeErrorMessage(error.message) }, { status: 500 });
     }
     return Response.json({ clients: data });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: safeErrorMessage(err.message) }, { status: 500 });
   }
 }
 
